@@ -241,6 +241,7 @@ send_email(
         "clarkb@mskcc.org",
         "mcmillet@mskcc.org",
         "janik@mskcc.org",
+        "stephet3@mskcc.org"
     ],
     subject=f"Patient's in UCC or ICU with Serum and Micro Specimen {today_start} to {current_datetime}",
     body=body,
