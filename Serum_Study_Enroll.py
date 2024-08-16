@@ -45,6 +45,7 @@ SELECT
   , v500.omf_get_cv_display(uces.catalog_cd) as "cbc_order_procedure"
   , v500.omf_get_cv_display(enc.loc_nurse_unit_cd) as "pt_location"
   , v500.omf_get_cv_display(uces.activity_type_cd) as "cbc_activity_type"
+  , omf_get_cv_display(container.spec_cntnr_cd) as "Container Disp"
   , v500.omf_get_cv_display(r.task_assay_cd) as "assay"
   , case v500.omf_get_cdf_meaning(pr.result_type_cd)
   when '1' then v500.lab_get_long_text_nortf(pr.long_text_id)
@@ -81,16 +82,20 @@ FROM ENCOUNTER ENC
   , REFERENCE_RANGE_FACTOR RRF
   , PERFORM_RESULT PR
   , RESULT R
+  , ORDER_SERV_RES_CONTAINER OSRC
+  , CONTAINER CONTAINER
 WHERE (uces.result_id = r.result_id)
 AND (uces.encntr_id = enc.encntr_id)
 AND (uces.patient_id = per.person_id)
+AND (uces.order_id = osrc.order_id)
+AND (osrc.container_id = container.container_id)
 AND (pr.result_id = r.result_id
  and pr.result_status_cd in (select unique code_value from code_value where code_set = 1901 and cdf_meaning in ('VERIFIED','AUTOVERIFIED','CORRECTED')))
 AND (pr.reference_range_factor_id = rrf.reference_range_factor_id)
 AND (((uces.in_lab_dt_tm BETWEEN cclsql_cnvtdatetimeutc(to_date(:start_date,'YYYY-MM-DD HH24:MI:SS'),1,126,1) AND cclsql_cnvtdatetimeutc(to_date(:end_date,'YYYY-MM-DD HH24:MI:SS'),1,126,1))
-    AND (enc.loc_nurse_unit_cd IN (2552871925.00,2552871943.00,2552871949.00,2555187977.00,2554842765.00,2552871955.00,2555865409.00,2552871931.00,2554975363.00,2552877235.00,2555408411.00, 2552877283))
-    AND (uces.catalog_cd IN (2552675779, 2552676451, 2552675971, 2552833361, 2552833417, 2552676661, 2552675827, 2552675833, 2552676643, 2563073911, 2561259465, 2552675923, 2552675929, 2552676679, 2552676691, 2552677159, 2552676697, 2552676079, 2552676229, 2552677033, 2552677045, 2552677057, 2552677039, 2552677081, 2552677069, 2552677105, 2552677165, 2552676091, 2554358667, 2555374461, 2552676121, 2552676133, 2552678011, 2552676781, 2552676157, 2552676169, 2552676187, 2552676937, 2552676115, 2552676241, 2552676793, 2552676799, 2552677171, 2552677099, 2552676853, 2552832673, 2552676871, 2568412689, 2552676889, 2552676895, 2552676859, 2552676331, 2552676355, 2552676925, 2552676931)))
-  AND (uces.patient_fac_cd IS NULL
+    AND (container.spec_cntnr_cd IN (2552866269))
+    AND (enc.loc_nurse_unit_cd IN (2552871925.00,2552871943.00,2552871949.00,2555187977.00,2554842765.00,2552871955.00,2555865409.00,2552871931.00,2554975363.00,2552877235.00,2555408411.00, 2552877283)))
+      AND (uces.patient_fac_cd IS NULL
     OR uces.patient_fac_cd IN (0,2552831699.00,2552819553.00,2552819557.00,2552819545.00,2552819541.00,2552923205.00,2552819561.00,2552819565.00,2552831651.00,2552923151.00,2554829303.00,2554829285.00,2552831657.00,2555416181.00,2555301415.00,2552923169.00,2552831663.00,2552923187.00,2555366977.00,2552923403.00,2552878003.00,2552923367.00,2552923223.00,2555371203.00,2552831645.00,2552831687.00,2552909717.00,2552831669.00,2552819549.00,2552831705.00,2555402539.00,2554942199.00,2555478755.00,2552831675.00,2552923349.00,2552909699.00,2552923295.00,2552909681.00,2552923259.00,2555196575.00,2552615531.00,2552651407.00,2555672665.00,2552923277.00,2552923241.00,2555279575.00,2552909645.00,2552909663.00,2552922971.00,2552922989.00,2552923025.00,2552923007.00,2552922935.00,2552923043.00,2552923061.00,2552922953.00,2552923079.00,2552923097.00,2552923115.00,2552923133.00,2552923313.00,2555909329.00,2553335905.00,2552831681.00,2552831639.00,2552923385.00,2552831711.00,2552923331.00,2556017625.00,2555475409.00,2552831693.00,2552925817.00,2555269075.00,2560121111.00,2560682671.00,2561205975.00,2562996689.00)))
 GROUP BY per.person_id, per.NAME_FULL_FORMATTED
   , uces.accession_nbr
@@ -101,6 +106,7 @@ GROUP BY per.person_id, per.NAME_FULL_FORMATTED
   , enc.loc_nurse_unit_cd
   , uces.activity_type_cd
   , v500.omf_get_cv_display(uces.activity_type_cd)
+  , omf_get_cv_display(container.spec_cntnr_cd)
   , v500.omf_get_cv_display(r.task_assay_cd)
   , case v500.omf_get_cdf_meaning(pr.result_type_cd)
   when '1' then v500.lab_get_long_text_nortf(pr.long_text_id)
@@ -138,6 +144,7 @@ ORDER BY per.NAME_FULL_FORMATTED nulls first
   , v500.omf_get_cv_display(uces.catalog_cd) nulls first
   , v500.omf_get_cv_display(enc.loc_nurse_unit_cd) nulls first
   , v500.omf_get_cv_display(uces.activity_type_cd) nulls first
+  , omf_get_cv_display(container.spec_cntnr_cd) nulls first
   , v500.omf_get_cv_display(r.task_assay_cd) nulls first
   , case v500.omf_get_cdf_meaning(pr.result_type_cd)
   when '1' then v500.lab_get_long_text_nortf(pr.long_text_id)
