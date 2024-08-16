@@ -73,7 +73,7 @@ SELECT
   when '8' then trim(v500.lab_fmt_result(pr.service_resource_cd,r.task_assay_cd,pr.result_value_numeric,0))
   when '9' then v500.omf_get_cv_display(pr.result_code_set_cd)
   when '11' then to_char(cclsql_utc_cnvt(pr.result_value_dt_tm,1,126),'yyyy-mm-dd HH24:MI:SS')
-end as "cbc_result"
+end as "serum_result"
   , case rrf.normal_ind
   when 0 then ''
   when 1 then trim(v500.lab_fmt_result (rrf.service_resource_cd,rrf.task_assay_cd,rrf.normal_low,0))
@@ -248,13 +248,22 @@ connection.close()
 
 pt = pd.merge(serum_df, micro_df, how="inner")
 pt
+
+acc = pt[['patient_name', 'serum_accession_nbr', 'mrn', 'pt_location', 'Container Disp']]
+
+unique_rows_df = acc.drop_duplicates()
+
 table_html = pt.to_html(index=False)
+
+unique_table_html = unique_rows_df.to_html(index=False)
+
+
 pt.to_csv(
     f"//vpenslab/LabShared/MicroBiology/QMS Data/Serum Study Enroll/Serum Study Enroll {numeric_datetime}.csv",
     index=False,
 )
 attachment = f"//vpenslab/LabShared/MicroBiology/QMS Data/Serum Study Enroll/Serum Study Enroll {numeric_datetime}.csv"
-body = f"<h2>Patient's in UCC or ICU with Serum and Micro Specimen {today_start} to {current_datetime}</h2> <br> {table_html} <br>"
+body = f"<h2>Patient's in UCC or ICU with Serum and Micro Specimen {today_start} to {current_datetime}</h2><h2>Unique Accession Numbers</h2><br>{unique_table_html}<br><h2>Complete Data</h2> {table_html} <br>"
 
 send_email(
     to=[
