@@ -1,7 +1,7 @@
 import os
 import oracledb
 from dotenv import dotenv_values
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 import pandas as pd
 from mskpymail import send_email
 
@@ -30,21 +30,31 @@ else:
     today_start = datetime.combine(datetime.today(), time(10, 0, 0)).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
+    
+    
 parms = {"start_date": today_start, "end_date": current_datetime}
+
+six_days_ago = datetime.now() - timedelta(days=7)
+
+# Format the date and time as a string
+m_start = six_days_ago.strftime('%Y-%m-%d %H:%M:%S')
+
+m_parms = {"start_date": m_start , "end_date": current_datetime}
 
 print("Start date:", today_start)
 print("End date:", current_datetime)
 
 
+
 serum_query = """
 SELECT
     per.NAME_FULL_FORMATTED as "patient_name"
-  , v500.lab_fmt_accession(uces.accession_nbr) as "cbc_accession_nbr"
+  , v500.lab_fmt_accession(uces.accession_nbr) as "serum_accession_nbr"
   , PM_GET_ALIAS('MRN', 0, per.PERSON_ID, 0, SYSDATE) as "mrn"
-  , cclsql_utc_cnvt(uces.in_lab_dt_tm, 1,126) as "cbc_date_time_in_lab"
-  , v500.omf_get_cv_display(uces.catalog_cd) as "cbc_order_procedure"
+  , cclsql_utc_cnvt(uces.in_lab_dt_tm, 1,126) as "serum_date_time_in_lab"
+  , v500.omf_get_cv_display(uces.catalog_cd) as "serum_order_procedure"
   , v500.omf_get_cv_display(enc.loc_nurse_unit_cd) as "pt_location"
-  , v500.omf_get_cv_display(uces.activity_type_cd) as "cbc_activity_type"
+  , v500.omf_get_cv_display(uces.activity_type_cd) as "serum_activity_type"
   , omf_get_cv_display(container.spec_cntnr_cd) as "Container Disp"
   , v500.omf_get_cv_display(r.task_assay_cd) as "assay"
   , case v500.omf_get_cdf_meaning(pr.result_type_cd)
@@ -176,6 +186,9 @@ end nulls first
   when 3 then trim(v500.lab_fmt_result (rrf.service_resource_cd,rrf.task_assay_cd,rrf.normal_high,0))
 end nulls first
 """
+
+
+
 # execute cbc query and output to pandas df
 cur = connection.cursor()
 serum_result = cur.execute(serum_query, parms).fetchall()
@@ -227,7 +240,7 @@ ORDER BY per.NAME_FULL_FORMATTED nulls first
 """
 # execute micro query and output to pandas df
 cur = connection.cursor()
-micro_result = cur.execute(micro_query, parms).fetchall()
+micro_result = cur.execute(micro_query, m_parms).fetchall()
 columns = [desc[0] for desc in cur.description]
 micro_df = pd.DataFrame(micro_result, columns=columns)
 cur.close()
